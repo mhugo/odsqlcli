@@ -36,6 +36,13 @@ def fetch_aggregations(result) -> Iterator[Dict]:
     for record in result.json()["aggregations"]:
         yield record
 
+def fetch_catalog_datasets(result) -> Iterator[Dict]:
+    for record in result.json()["datasets"]:
+        yield {
+            k: record["dataset"][k]
+            for k in ("dataset_id", "dataset_uid", "has_records", "data_visible")
+        }
+
 
 def display_results_in_table(records: Iterator[Dict]) -> Iterator[str]:
     # collect rows in a list
@@ -90,6 +97,11 @@ cli_parser.add_argument("-u", "--user", help="HTTP Basic auth username")
 cli_parser.add_argument("-p", "--password", help="HTTP Basic auth password")
 cli_parser.add_argument("--help", action="help", help="Show this message and exit")
 
+RECORDS_ENDPOINT = "records"
+AGGREGATIONS_ENDPOINT = "aggregates"
+DATASETS_ENDPOINT = "catalog/datasets"
+DATASET_AGGREGATIONS_ENDPOINT = "catalog/aggregates"
+
 def main():
     args = cli_parser.parse_args()
     
@@ -122,10 +134,14 @@ def main():
 
         q = split_query(query)
 
+        if q.from_ == "catalog.datasets":
+            endpoint = DATASETS_ENDPOINT
+        else:
+            endpoint = RECORDS_ENDPOINT
+
         params = {
             "select": q.select
         }
-        endpoint = "records"
         if q.where:
             params["where"] = q.where
         if q.limit:
@@ -133,31 +149,47 @@ def main():
         if q.offset:
             params["start"] = q.offset
         if q.group_by:
-            endpoint = "aggregates"
+            endpoint = AGGREGATIONS_ENDPOINT
             params["group_by"] = q.group_by
         if q.order_by:
-            if endpoint == "records":
+            if endpoint in (RECORDS_ENDPOINT, DATASETS_ENDPOINT):
                 params["sort"] = q.order_by
             else:
                 params["order_by"] = q.order_by
+
+        # Decide when to switch to catalog/aggregates
+        # FIXME: not perfect
+        if q.from_ == "catalog.datasets":
+            if q.group_by or q.select != "*":
+                endpoint = DATASET_AGGREGATIONS_ENDPOINT
 
         kw_auth = {}
         if args.user:
             kw_auth["auth"] = (args.user, args.password)
 
+        if endpoint.startswith("catalog"):
+            url = args.host + "/api/v2/{}".format(endpoint)
+        else:
+            url = args.host + "/api/v2/catalog/datasets/{}/{}".format(q.from_, endpoint)
+
+        print("URL", url)
         r = requests.get(
-                args.host + "/api/v2/catalog/datasets/{}/{}".format(q.from_, endpoint),
-                params=params,
-                **kw_auth
+            url,
+            params=params,
+            **kw_auth
         )
 
         if r.status_code != 200:
             print(r.text)
             continue
 
-        if endpoint == "records":
+        if endpoint == RECORDS_ENDPOINT:
             rows = fetch_records(r)
-        else:
+        elif endpoint == AGGREGATIONS_ENDPOINT:
+            rows = fetch_aggregations(r)
+        elif endpoint == DATASETS_ENDPOINT:
+            rows = fetch_catalog_datasets(r)
+        elif endpoint == DATASET_AGGREGATIONS_ENDPOINT:
             rows = fetch_aggregations(r)
 
         output_with_elision(
