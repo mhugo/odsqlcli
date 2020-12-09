@@ -102,15 +102,25 @@ def main():
     session = PromptSession(
         lexer=PygmentsLexer(SqlLexer), completer=sql_completer, style=style)
 
+    print("Welcome. Type ODSQL queries ending with ';'")
     while True:
         try:
-            text = session.prompt('> ')
+            query = ""
+            first_line = True
+            while True:
+                fragment = session.prompt('> ' if first_line else ": ")
+                first_line = False
+                if fragment.strip().endswith(";"):
+                    query += fragment
+                    break
+                query += fragment + "\n"
+            query = query.strip("; \t\n")
         except KeyboardInterrupt:
             continue  # Control-C pressed. Try again.
         except EOFError:
             break  # Control-D pressed.
 
-        q = split_query(text)
+        q = split_query(query)
 
         params = {
             "select": q.select
