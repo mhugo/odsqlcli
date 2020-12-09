@@ -1,3 +1,4 @@
 prompt-toolkit
 Pygments
 requests
+git+https://github.com/opendatasoft/antlr4-python-runtime.git@ab4ffa54224a376bfd6d61a588457fa5000efd75#antlr4-python-runtime==4.8

@@ -102,8 +102,6 @@ TOP: T O P;
 
 LIMIT: L I M I T;
 
-OFFSET: O F F S E T;
-
 WHERE: W H E R E;
 
 TRUE: T R U E;

@@ -1,14 +1,8 @@
 from antlr4 import CommonTokenStream, InputStream
-from antlr.QueryParserVisitor import QueryParserVisitor
+from antlr.MyQueryParserVisitor import MyQueryParserVisitor
 
-from antlr.QueryLexer import QueryLexer
-from antlr.QueryParser import QueryParser
-
-# FIXME: the grammar must be augmented by
-# select_from
-#    : SELECT select_expressions FROM table=ods_field (WHERE condition)? (GROUP BY group_by_expressions)? (ORDER BY order_by_expressions)? (LIMIT limit=int_literal)? (OFFSET offset=int_literal)? EOF
-#    ;
-
+from antlr.MyQueryLexer import MyQueryLexer
+from antlr.MyQueryParser import MyQueryParser
 
 class SplitQuery:
     def __init__(self):
@@ -21,7 +15,7 @@ class SplitQuery:
         self.offset = None
 
 
-class SplitVisitor(QueryParserVisitor):
+class SplitVisitor(MyQueryParserVisitor):
     """Just splits an ODSQL query into its components:
     select, where, group_by, order_by, from, limit, offset"""
     def __init__(self):
@@ -45,11 +39,11 @@ class SplitVisitor(QueryParserVisitor):
 def split_query(sql):
     input_stream = InputStream(sql)
 
-    lexer = QueryLexer(input_stream)
+    lexer = MyQueryLexer(input_stream)
 
     stream = CommonTokenStream(lexer)
 
-    parser = QueryParser(stream)
+    parser = MyQueryParser(stream)
 
     parsed = parser.select_from()
 
