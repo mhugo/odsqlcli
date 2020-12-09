@@ -172,7 +172,6 @@ def main():
         else:
             url = args.host + "/api/v2/catalog/datasets/{}/{}".format(q.from_, endpoint)
 
-        print("URL", url)
         r = requests.get(
             url,
             params=params,
