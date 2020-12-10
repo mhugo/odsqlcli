@@ -144,9 +144,9 @@ def main():
         }
         if q.where:
             params["where"] = q.where
-        if q.limit:
+        if q.limit is not None:
             params["rows"] = q.limit
-        if q.offset:
+        if q.offset is not None:
             params["start"] = q.offset
         if q.group_by:
             endpoint = AGGREGATIONS_ENDPOINT

@@ -6,13 +6,13 @@ from antlr.MyQueryParser import MyQueryParser
 
 class SplitQuery:
     def __init__(self):
-        self.select = None
-        self.from_ = None
-        self.where = None
-        self.group_by = None
-        self.order_by = None
-        self.limit = None
-        self.offset = None
+        self.select = None  # type: str
+        self.from_ = None  # type: str
+        self.where = None  # type: str
+        self.group_by = None  # type: str
+        self.order_by = None  # type: str
+        self.limit = None  # type: int
+        self.offset = None  # type: int
 
 
 class SplitVisitor(MyQueryParserVisitor):
