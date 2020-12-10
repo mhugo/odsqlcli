@@ -5,6 +5,7 @@ import sys
 
 from prompt_toolkit import prompt, PromptSession
 from prompt_toolkit.completion import WordCompleter
+from prompt_toolkit.history import FileHistory
 from prompt_toolkit.lexers import PygmentsLexer
 from prompt_toolkit.styles import Style
 from pygments.lexers.sql import SqlLexer
@@ -102,6 +103,8 @@ AGGREGATIONS_ENDPOINT = "aggregates"
 DATASETS_ENDPOINT = "catalog/datasets"
 DATASET_AGGREGATIONS_ENDPOINT = "catalog/aggregates"
 
+HISTORY_FILE = os.path.expanduser("~/.odsql_history")
+
 def main():
     args = cli_parser.parse_args()
     
@@ -112,7 +115,11 @@ def main():
         )
 
     session = PromptSession(
-        lexer=PygmentsLexer(SqlLexer), completer=sql_completer, style=style)
+        lexer=PygmentsLexer(SqlLexer),
+        completer=sql_completer,
+        style=style,
+        history=FileHistory(HISTORY_FILE)
+    )
 
     print("Welcome. Type ODSQL queries ending with ';'")
     while True:
