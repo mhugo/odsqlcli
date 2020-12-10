@@ -1,0 +1,2 @@
+#!/usr/bin/env bash
+make -C antlr && python odsqlcli.py $*
