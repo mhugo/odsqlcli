@@ -12,7 +12,7 @@ from pygments.lexers.sql import SqlLexer
 
 from typing import Iterator, Dict
 
-from parser import split_query
+from parser import split_query_or_command
 
 import requests
 
@@ -92,6 +92,34 @@ def output_with_elision(stream: Iterator[str], max_width: int) -> None:
                 print(line[0:-1])
             line = ""
 
+
+class OptionRegistry:
+    options = {
+        "debug": 0
+    }
+
+    def set_command(self, option_name, value):
+        if option_name not in self.options:
+            print("Unknown option {}".format(option_name))
+            return
+
+        self.options[option_name] = value
+
+    def get(self, option_name):
+        return self.options.get(option_name)
+
+    def show_command(self, option_name):
+        if option_name == "all":
+            # list all
+            for option, value in self.options.items():
+                print("{} = {}".format(option, value))
+        else:
+            if option_name not in self.options:
+                print("Unknown option {}".format(option_name))
+                return
+            print(self.options[option_name])
+
+
 cli_parser = argparse.ArgumentParser(description="ODSQL Command line interface", add_help=False)
 cli_parser.add_argument("-h", "--host", help="The HTTP host to connect to", required=True)
 cli_parser.add_argument("-u", "--user", help="HTTP Basic auth username")
@@ -107,6 +135,7 @@ HISTORY_FILE = os.path.expanduser("~/.odsql_history")
 
 def main():
     args = cli_parser.parse_args()
+    options = OptionRegistry()
     
     if not args.password:
         args.password = prompt(
@@ -139,7 +168,15 @@ def main():
         except EOFError:
             break  # Control-D pressed.
 
-        q = split_query(query)
+        q = split_query_or_command(query)
+
+        if q.set_command is not None:
+            option_name, value = q.set_command
+            options.set_command(option_name, value)
+            continue
+        if q.show_command is not None:
+            options.show_command(q.show_command)
+            continue
 
         if q.from_ == "catalog.datasets":
             endpoint = DATASETS_ENDPOINT
@@ -178,6 +215,10 @@ def main():
             url = args.host + "/api/v2/{}".format(endpoint)
         else:
             url = args.host + "/api/v2/catalog/datasets/{}/{}".format(q.from_, endpoint)
+
+        if options.get("debug"):
+            print("url:", url)
+            print("params:", params)
 
         r = requests.get(
             url,

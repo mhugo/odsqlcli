@@ -2,7 +2,7 @@ from antlr4 import CommonTokenStream, InputStream
 from antlr.MyQueryParserVisitor import MyQueryParserVisitor
 
 from antlr.MyQueryLexer import MyQueryLexer
-from antlr.MyQueryParser import MyQueryParser
+from antlr.MyQueryParserParser import MyQueryParserParser
 
 class SplitQuery:
     def __init__(self):
@@ -13,6 +13,9 @@ class SplitQuery:
         self.order_by = None  # type: str
         self.limit = None  # type: int
         self.offset = None  # type: int
+
+        self.set_command = None  # type: Tuple[str, int]
+        self.show_command = None  # type: str
 
 
 class SplitVisitor(MyQueryParserVisitor):
@@ -35,17 +38,29 @@ class SplitVisitor(MyQueryParserVisitor):
         if ctx.offset is not None:
             self.q.offset = int(ctx.offset.getText())
 
+    def visitSet_command(self, ctx):
+        self.q.set_command = (
+            ctx.option_name.getText(),
+            int(ctx.int_value.getText())
+        )
 
-def split_query(sql):
+    def visitShow_command(self, ctx):
+        if ctx.option_name:
+            self.q.show_command = ctx.option_name.getText()
+        else:
+            self.q.show_command = "all"
+
+
+def split_query_or_command(sql):
     input_stream = InputStream(sql)
 
     lexer = MyQueryLexer(input_stream)
 
     stream = CommonTokenStream(lexer)
 
-    parser = MyQueryParser(stream)
+    parser = MyQueryParserParser(stream)
 
-    parsed = parser.select_from()
+    parsed = parser.cli_command()
 
     visitor = SplitVisitor()
     visitor.visit(parsed)
