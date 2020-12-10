@@ -65,6 +65,10 @@ def display_results_in_table(records: Iterator[Dict]) -> Iterator[str]:
 
         rows.append([str(record[field]) for field in fields])
 
+    if not rows:
+        yield "<empty>\n"
+        return
+
     # display a table
     total_width = sum([w+3 for w in field_width]) + 1
     yield "-" * total_width + "\n"
