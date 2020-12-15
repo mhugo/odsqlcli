@@ -1,4 +1,4 @@
-from antlr4 import CommonTokenStream, InputStream
+from antlr4 import CommonTokenStream, InputStream, TerminalNode
 from antlr.MyQueryParserVisitor import MyQueryParserVisitor
 
 from antlr.MyQueryLexer import MyQueryLexer
@@ -16,33 +16,43 @@ class SplitQuery:
 
         self.set_command = None  # type: Tuple[str, int]
         self.show_command = None  # type: str
+        self.has_aggregate = False
 
 
 class SplitVisitor(MyQueryParserVisitor):
     """Just splits an ODSQL query into its components:
     select, where, group_by, order_by, from, limit, offset"""
-    def __init__(self):
+    def __init__(self, input_text):
+        self._input_text = input_text
         self.q = SplitQuery()
 
     def visitSelect_from(self, ctx):
-        self.q.select = ctx.select_expressions().getText()
-        self.q.from_ = ctx.table.getText()
+        def _raw_text(ctx):
+            return self._input_text[
+                ctx.start.start:ctx.stop.stop + 1]
+
+        self.q.select = _raw_text(ctx.select_expressions())
+        self.q.from_ = _raw_text(ctx.table)
         if ctx.condition():
-            self.q.where = ctx.condition().getText()
+            self.q.where = _raw_text(ctx.condition())
         if ctx.group_by_expressions():
-            self.q.group_by = ctx.group_by_expressions().getText()
+            self.q.group_by = _raw_text(ctx.group_by_expressions())
         if ctx.order_by_expressions():
-            self.q.order_by = ctx.order_by_expressions().getText()
+            self.q.order_by = _raw_text(ctx.order_by_expressions())
         if ctx.limit is not None:
             self.q.limit = int(ctx.limit.getText())
         if ctx.offset is not None:
             self.q.offset = int(ctx.offset.getText())
+        return self.visitChildren(ctx)
 
     def visitSet_command(self, ctx):
         self.q.set_command = (
             ctx.option_name.getText(),
             int(ctx.int_value.getText())
         )
+
+    def visitFunctionAggregation(self, ctx):
+        self.q.has_aggregate = True
 
     def visitShow_command(self, ctx):
         if ctx.option_name:

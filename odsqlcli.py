@@ -197,7 +197,6 @@ def main():
         if q.offset is not None:
             params["start"] = q.offset
         if q.group_by:
-            endpoint = AGGREGATIONS_ENDPOINT
             params["group_by"] = q.group_by
         if q.order_by:
             if endpoint in (RECORDS_ENDPOINT, DATASETS_ENDPOINT):
@@ -205,11 +204,12 @@ def main():
             else:
                 params["order_by"] = q.order_by
 
-        # Decide when to switch to catalog/aggregates
-        # FIXME: not perfect
-        if q.from_ == "catalog.datasets":
-            if q.group_by or q.select != "*":
+        # Decide when to switch to aggregates
+        if q.has_aggregate:
+            if q.from_ == "catalog.datasets":
                 endpoint = DATASET_AGGREGATIONS_ENDPOINT
+            elif endpoint == RECORDS_ENDPOINT:
+                endpoint = AGGREGATIONS_ENDPOINT
 
         kw_auth = {}
         if args.user:
