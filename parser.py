@@ -51,7 +51,19 @@ class SplitVisitor(MyQueryParserVisitor):
             self.q.show_command = "all"
 
 
-def split_query_or_command(sql):
+def print_rule_tree(tree, rule_names, indent=0):
+    if isinstance(tree, TerminalNode):
+        print(" " * indent, tree.getSymbol())
+    else:
+        idx = tree.getRuleIndex()
+        print(" " * indent, tree.__class__, rule_names[idx])
+        for child in tree.getChildren():
+            print_rule_tree(child, rule_names, indent + 2)
+
+
+def split_query_or_command(sql, debug=False):
+    # type: (str) -> SplitQuery
+
     input_stream = InputStream(sql)
 
     lexer = MyQueryLexer(input_stream)
@@ -62,7 +74,11 @@ def split_query_or_command(sql):
 
     parsed = parser.cli_command()
 
-    visitor = SplitVisitor()
+    #print(parsed, parsed.toStringTree(parser.ruleNames))
+    if debug:
+        print_rule_tree(parsed, parser.ruleNames)
+
+    visitor = SplitVisitor(sql)
     visitor.visit(parsed)
 
     return visitor.q

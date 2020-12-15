@@ -172,7 +172,7 @@ def main():
         except EOFError:
             break  # Control-D pressed.
 
-        q = split_query_or_command(query)
+        q = split_query_or_command(query, options.get("debug"))
 
         if q.set_command is not None:
             option_name, value = q.set_command
