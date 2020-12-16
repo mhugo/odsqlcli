@@ -186,7 +186,7 @@ def main():
             options.show_command(q.show_command)
             continue
 
-        if q.from_ == "catalog.datasets":
+        if q.from_ == "catalog":
             endpoint = DATASETS_ENDPOINT
         else:
             endpoint = RECORDS_ENDPOINT
@@ -210,7 +210,7 @@ def main():
 
         # Decide when to switch to aggregates
         if q.has_aggregate:
-            if q.from_ == "catalog.datasets":
+            if q.from_ == "catalog":
                 endpoint = DATASET_AGGREGATIONS_ENDPOINT
             elif endpoint == RECORDS_ENDPOINT:
                 endpoint = AGGREGATIONS_ENDPOINT
