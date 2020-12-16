@@ -1,4 +1,4 @@
-# A Command Line Interface for OSQL
+# A Command Line Interface for ODSQL
 
 This is an interactive command line interface that can be used to request ODS Explore API v2 endpoints.
 
