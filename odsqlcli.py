@@ -84,6 +84,10 @@ def display_results_in_table(records: Iterator[Dict]) -> Iterator[str]:
             yield value + " " * (field_width[i] - len(value)) + " | "
         yield "\n"
 
+    yield "-" * total_width + "\n"
+
+    yield "({} row{})".format(len(rows), "s" if len(rows) > 0 else "") + "\n"
+
 
 def output_with_elision(stream: Iterator[str], max_width: int) -> None:
     line = ""
