@@ -10,7 +10,7 @@ from prompt_toolkit.lexers import PygmentsLexer
 from prompt_toolkit.styles import Style
 from pygments.lexers.sql import SqlLexer
 
-from typing import Iterator, Dict
+from typing import Iterator, Dict, Optional
 
 from parser import split_query_or_command
 
@@ -28,24 +28,24 @@ style = Style.from_dict({
     'scrollbar.button': 'bg:#222222',
 })
 
-def fetch_records(result) -> Iterator[Dict]:
-    for record in result.json()["records"]:
+def fetch_records(result: Dict) -> Iterator[Dict]:
+    for record in result["records"]:
         yield record["record"]["fields"]
 
 
-def fetch_aggregations(result) -> Iterator[Dict]:
-    for record in result.json()["aggregations"]:
+def fetch_aggregations(result: Dict) -> Iterator[Dict]:
+    for record in result["aggregations"]:
         yield record
 
-def fetch_catalog_datasets(result) -> Iterator[Dict]:
-    for record in result.json()["datasets"]:
+def fetch_catalog_datasets(result: Dict) -> Iterator[Dict]:
+    for record in result["datasets"]:
         yield {
             k: record["dataset"][k]
             for k in ("dataset_id", "dataset_uid", "has_records", "data_visible")
         }
 
 
-def display_results_in_table(records: Iterator[Dict]) -> Iterator[str]:
+def display_results_in_table(records: Iterator[Dict], total_count : Optional[int] = None) -> Iterator[str]:
     # collect rows in a list
     # and compute width of each column
     rows = []
@@ -86,7 +86,10 @@ def display_results_in_table(records: Iterator[Dict]) -> Iterator[str]:
 
     yield "-" * total_width + "\n"
 
-    yield "({} row{})".format(len(rows), "s" if len(rows) > 0 else "") + "\n"
+    yield "({} row{}{})".format(
+        len(rows),
+        "s" if len(rows) > 1 else "",
+        " on a total of {}".format(total_count) if total_count else "") + "\n"
 
 
 def output_with_elision(stream: Iterator[str], max_width: int) -> None:
@@ -238,17 +241,20 @@ def main():
             print(r.text)
             continue
 
+        results = r.json()
+        total_count = None
         if endpoint == RECORDS_ENDPOINT:
-            rows = fetch_records(r)
+            rows = fetch_records(results)
+            total_count = results["total_count"]
         elif endpoint == AGGREGATIONS_ENDPOINT:
-            rows = fetch_aggregations(r)
+            rows = fetch_aggregations(results)
         elif endpoint == DATASETS_ENDPOINT:
-            rows = fetch_catalog_datasets(r)
+            rows = fetch_catalog_datasets(results)
         elif endpoint == DATASET_AGGREGATIONS_ENDPOINT:
-            rows = fetch_aggregations(r)
+            rows = fetch_aggregations(results)
 
         output_with_elision(
-            display_results_in_table(rows),
+            display_results_in_table(rows, total_count),
             os.get_terminal_size().columns
         )
 
