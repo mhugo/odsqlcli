@@ -109,7 +109,9 @@ def output_with_elision(stream: Iterator[str], max_width: int) -> None:
 
 class OptionRegistry:
     options = {
-        "debug": 0
+        # option_name: [Description, value]
+        "debug": ["Be verbose", 0],
+        "force_records": ["Force the records endpoint when both aggregates and records are possible", 0]
     }
 
     def set_command(self, option_name, value):
@@ -117,21 +119,21 @@ class OptionRegistry:
             print("Unknown option {}".format(option_name))
             return
 
-        self.options[option_name] = value
+        self.options[option_name][1] = value
 
     def get(self, option_name):
-        return self.options.get(option_name)
+        return self.options.get(option_name)[1]
 
     def show_command(self, option_name):
         if option_name == "all":
             # list all
-            for option, value in self.options.items():
-                print("{} = {}".format(option, value))
+            for option, desc_value in self.options.items():
+                print("{} ({}) = {}".format(option, desc_value[0], desc_value[1]))
         else:
             if option_name not in self.options:
                 print("Unknown option {}".format(option_name))
                 return
-            print(self.options[option_name])
+            print(self.options[option_name][1])
 
 
 cli_parser = argparse.ArgumentParser(description="ODSQL Command line interface", add_help=False)
@@ -256,7 +258,7 @@ def main():
                 params["order_by"] = q.order_by
 
         # Decide when to switch to aggregates
-        if q.has_aggregate:
+        if q.group_by or (q.has_aggregate and not options.get("force_records")):
             if q.from_ == "catalog":
                 endpoint = DATASET_AGGREGATIONS_ENDPOINT
             elif endpoint == RECORDS_ENDPOINT:
