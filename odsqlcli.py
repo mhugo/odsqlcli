@@ -10,7 +10,7 @@ from prompt_toolkit.lexers import PygmentsLexer
 from prompt_toolkit.styles import Style
 from pygments.lexers.sql import SqlLexer
 
-from typing import Iterator, Dict, Optional
+from typing import Iterator, Dict, Optional, Tuple
 
 from parser import split_query_or_command
 
@@ -28,6 +28,7 @@ style = Style.from_dict({
     'scrollbar.button': 'bg:#222222',
 })
 
+
 def fetch_records(result: Dict) -> Iterator[Dict]:
     for record in result["records"]:
         yield record["record"]["fields"]
@@ -37,12 +38,14 @@ def fetch_aggregations(result: Dict) -> Iterator[Dict]:
     for record in result["aggregations"]:
         yield record
 
+
 def fetch_catalog_datasets(result: Dict) -> Iterator[Dict]:
     for record in result["datasets"]:
-        yield {
-            k: record["dataset"][k]
-            for k in ("dataset_id", "dataset_uid", "has_records", "data_visible")
-        }
+        yield record["dataset"]
+        #yield {
+        #    k: record["dataset"][k]
+        #    for k in ("dataset_id", "dataset_uid", "has_records", "data_visible")
+        #}
 
 
 def display_results_in_table(records: Iterator[Dict], total_count : Optional[int] = None) -> Iterator[str]:
@@ -144,15 +147,50 @@ DATASET_AGGREGATIONS_ENDPOINT = "catalog/aggregates"
 
 HISTORY_FILE = os.path.expanduser("~/.odsql_history")
 
+
+class APIRequester(object):
+
+    def __init__(self, host: str, basic_auth: Optional[Tuple[str, str]] = None):
+        self.__host = host
+        self.__basic_auth = {"auth": basic_auth} if basic_auth else {}
+
+    def get(self, endpoint: str, get_parameters: Optional[Dict[str, str]] = None) -> requests.models.Response:
+        return requests.get(
+            self.__host + endpoint,
+            params=get_parameters,
+            **self.__basic_auth
+        )
+
+    def fetch_dataset_schema(self, dataset_name: str) -> Iterator[Dict]:
+        # FIXME where clause ?
+        r = self.get("/api/v2/catalog/datasets")
+        if r.status_code != 200:
+            print(r.text)
+            raise StopIteration
+        results = r.json()
+        for dataset in results["datasets"]:
+            ds = dataset["dataset"]
+            if ds["dataset_id"] != dataset_name:
+                continue
+            for field in ds["fields"]:
+                yield field
+
+
 def main():
     args = cli_parser.parse_args()
     options = OptionRegistry()
-    
+
     if not args.password:
         args.password = prompt(
             'Password for user {}:'.format(args.user),
             is_password=True
         )
+
+    basic_auth = None
+    if args.user:
+        basic_auth = (args.user, args.password)
+
+    requester = APIRequester(args.host, basic_auth=basic_auth)
 
     session = PromptSession(
         lexer=PygmentsLexer(SqlLexer),
@@ -188,6 +226,12 @@ def main():
         if q.show_command is not None:
             options.show_command(q.show_command)
             continue
+        if q.schema_command is not None:
+            output_with_elision(
+                display_results_in_table(requester.fetch_dataset_schema(q.schema_command)),
+                os.get_terminal_size().columns
+            )
+            continue
 
         if q.from_ == "catalog":
             endpoint = DATASETS_ENDPOINT
@@ -218,24 +262,16 @@ def main():
             elif endpoint == RECORDS_ENDPOINT:
                 endpoint = AGGREGATIONS_ENDPOINT
 
-        kw_auth = {}
-        if args.user:
-            kw_auth["auth"] = (args.user, args.password)
-
         if endpoint.startswith("catalog"):
-            url = args.host + "/api/v2/{}".format(endpoint)
+            api_endpoint = "/api/v2/{}".format(endpoint)
         else:
-            url = args.host + "/api/v2/catalog/datasets/{}/{}".format(q.from_, endpoint)
+            api_endpoint = "/api/v2/catalog/datasets/{}/{}".format(q.from_, endpoint)
 
         if options.get("debug"):
-            print("url:", url)
+            print("url:", api_endpoint)
             print("params:", params)
 
-        r = requests.get(
-            url,
-            params=params,
-            **kw_auth
-        )
+        r = requester.get(api_endpoint, get_parameters=params)
 
         if r.status_code != 200:
             print(r.text)

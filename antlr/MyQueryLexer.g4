@@ -8,3 +8,4 @@ SET: S E T;
 SHOW: S H O W;
 LIST: L I S T;
 OPTIONS: O P T I O N S;
+SCHEMA: S C H E M A;

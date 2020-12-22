@@ -26,8 +26,13 @@ show_command
     : SHOW (option_name=ods_field)?
     ;
 
+schema_command
+    : SCHEMA dataset=ods_field
+    ;
+
 cli_command
     : select_from
     | set_command
     | show_command
+    | schema_command
     ;

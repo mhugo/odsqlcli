@@ -4,18 +4,21 @@ from antlr.MyQueryParserVisitor import MyQueryParserVisitor
 from antlr.MyQueryLexer import MyQueryLexer
 from antlr.MyQueryParserParser import MyQueryParserParser
 
+from typing import Optional, Tuple
+
 class SplitQuery:
     def __init__(self):
-        self.select = None  # type: str
-        self.from_ = None  # type: str
-        self.where = None  # type: str
-        self.group_by = None  # type: str
-        self.order_by = None  # type: str
-        self.limit = None  # type: int
-        self.offset = None  # type: int
+        self.select = None  # type: Optional[str]
+        self.from_ = None  # type: Optional[str]
+        self.where = None  # type: Optional[str]
+        self.group_by = None  # type: Optional[str]
+        self.order_by = None  # type: Optional[str]
+        self.limit = None  # type: Optional[int]
+        self.offset = None  # type: Optional[int]
 
-        self.set_command = None  # type: Tuple[str, int]
-        self.show_command = None  # type: str
+        self.set_command = None  # type: Optional[Tuple[str, int]]
+        self.show_command = None  # type: Optional[str]
+        self.schema_command = None  # type: Optional[str]
         self.has_aggregate = False
 
 
@@ -60,6 +63,9 @@ class SplitVisitor(MyQueryParserVisitor):
         else:
             self.q.show_command = "all"
 
+    def visitSchema_command(self, ctx):
+        self.q.schema_command = ctx.dataset.getText()
+
 
 def print_rule_tree(tree, rule_names, indent=0):
     if isinstance(tree, TerminalNode):
@@ -72,7 +78,7 @@ def print_rule_tree(tree, rule_names, indent=0):
 
 
 def split_query_or_command(sql, debug=False):
-    # type: (str) -> SplitQuery
+    # type: (str, bool) -> SplitQuery
 
     input_stream = InputStream(sql)
 
@@ -84,7 +90,6 @@ def split_query_or_command(sql, debug=False):
 
     parsed = parser.cli_command()
 
-    #print(parsed, parsed.toStringTree(parser.ruleNames))
     if debug:
         print_rule_tree(parsed, parser.ruleNames)
 
