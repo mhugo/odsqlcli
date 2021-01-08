@@ -35,7 +35,9 @@ class SplitVisitor(MyQueryParserVisitor):
                 ctx.start.start:ctx.stop.stop + 1]
 
         self.q.select = _raw_text(ctx.select_expressions())
-        self.q.from_ = _raw_text(ctx.table)
+        # remove quote-escaping of dataset_id (table) containing special char
+        # '`arbres-parisiens`' -> 'arbres-parisiens'
+        self.q.from_ = _raw_text(ctx.table).replace('`', '')
         if ctx.condition():
             self.q.where = _raw_text(ctx.condition())
         if ctx.group_by_expressions():
