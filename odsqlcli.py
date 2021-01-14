@@ -106,12 +106,20 @@ def output_with_elision(stream: Iterator[str], max_width: int) -> None:
                 print(line[0:-1])
             line = ""
 
+def simple_output(stream: Iterator[str]) -> None:
+    for line in stream:
+        if line.endswith("\n"):
+            print(line[0:-1])
+        else:
+            print(line, end="")
+
 
 class OptionRegistry:
     options = {
         # option_name: [Description, value]
         "debug": ["Be verbose", 0],
-        "force_records": ["Force the records endpoint when both aggregates and records are possible", 0]
+        "force_records": ["Force the records endpoint when both aggregates and records are possible", 0],
+        "truncate_lines": ["Truncate long lines that are wider than the screen width", 1]
     }
 
     def set_command(self, option_name, value):
@@ -291,10 +299,15 @@ def main():
         elif endpoint == DATASET_AGGREGATIONS_ENDPOINT:
             rows = fetch_aggregations(results)
 
-        output_with_elision(
-            display_results_in_table(rows, total_count),
-            os.get_terminal_size().columns
-        )
+        if options.get("truncate_lines"):
+            output_with_elision(
+                display_results_in_table(rows, total_count),
+                os.get_terminal_size().columns
+            )
+        else:
+            simple_output(
+                display_results_in_table(rows, total_count),
+            )
 
     print('GoodBye!')
 
