@@ -2,6 +2,7 @@
 import argparse
 import os
 import sys
+import time
 
 from prompt_toolkit import prompt, PromptSession
 from prompt_toolkit.completion import WordCompleter
@@ -119,7 +120,8 @@ class OptionRegistry:
         # option_name: [Description, value]
         "debug": ["Be verbose", 0],
         "force_records": ["Force the records endpoint when both aggregates and records are possible", 0],
-        "truncate_lines": ["Truncate long lines that are wider than the screen width", 1]
+        "truncate_lines": ["Truncate long lines that are wider than the screen width", 1],
+        "display_timing": ["Display timing", 0]
     }
 
     def set_command(self, option_name, value):
@@ -281,7 +283,9 @@ def main():
             print("url:", api_endpoint)
             print("params:", params)
 
+        start_t = time.time()
         r = requester.get(api_endpoint, get_parameters=params)
+        request_elapsed = time.time() - start_t
 
         if r.status_code != 200:
             print(r.text)
@@ -308,6 +312,9 @@ def main():
             simple_output(
                 display_results_in_table(rows, total_count),
             )
+
+        if options.get("display_timing"):
+            print("Request time: {:0.2g}s".format(request_elapsed))
 
     print('GoodBye!')
 
