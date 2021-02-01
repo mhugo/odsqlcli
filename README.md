@@ -4,6 +4,10 @@ This is an interactive command line interface that can be used to request ODS Ex
 
 It supports autocompletion, syntax highlighting, multiline input, and history.
 
+## Screenshot
+
+[![asciicast](https://asciinema.org/a/YvJ72VhTgopwI7n4zlx8cN1oJ.svg)](https://asciinema.org/a/YvJ72VhTgopwI7n4zlx8cN1oJ)
+
 ## Installation
 
 It is currently designed in order to easily test API v2 features on different code branches.
