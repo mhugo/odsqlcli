@@ -118,10 +118,11 @@ def simple_output(stream: Iterator[str]) -> None:
 class OptionRegistry:
     options = {
         # option_name: [Description, value]
-        "debug": ["Be verbose", 0],
-        "force_records": ["Force the records endpoint when both aggregates and records are possible", 0],
-        "truncate_lines": ["Truncate long lines that are wider than the screen width", 1],
-        "display_timing": ["Display timing", 0]
+        "debug": ["Be verbose", int, 0],
+        "force_records": ["Force the records endpoint when both aggregates and records are possible", int, 0],
+        "truncate_lines": ["Truncate long lines that are wider than the screen width", int, 1],
+        "display_timing": ["Display timing", int, 0],
+        "timezone": ["Current timezone", str, "Europe/Paris"]
     }
 
     def set_command(self, option_name, value):
@@ -129,21 +130,25 @@ class OptionRegistry:
             print("Unknown option {}".format(option_name))
             return
 
-        self.options[option_name][1] = value
+        type = self.options[option_name][1]
+        try:
+            self.options[option_name][2] = type(value)
+        except ValueError:
+            print("Wrong type for option, expected: {}".format(type.__name__))
 
     def get(self, option_name):
-        return self.options.get(option_name)[1]
+        return self.options.get(option_name)[2]
 
     def show_command(self, option_name):
         if option_name == "all":
             # list all
             for option, desc_value in self.options.items():
-                print("{} ({}) = {}".format(option, desc_value[0], desc_value[1]))
+                print("{} - ({}:{}) = {}".format(option, desc_value[1].__name__, desc_value[0], desc_value[2]))
         else:
             if option_name not in self.options:
                 print("Unknown option {}".format(option_name))
                 return
-            print(self.options[option_name][1])
+            print(self.get(option_name))
 
 
 cli_parser = argparse.ArgumentParser(description="ODSQL Command line interface", add_help=False)
@@ -278,6 +283,8 @@ def main():
             api_endpoint = "/api/v2/{}".format(endpoint)
         else:
             api_endpoint = "/api/v2/catalog/datasets/{}/{}".format(q.from_, endpoint)
+
+        params["timezone"] = options.get("timezone")
 
         if options.get("debug"):
             print("url:", api_endpoint)

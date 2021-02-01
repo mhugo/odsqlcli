@@ -19,7 +19,7 @@ select_from
     ;
 
 set_command
-    : SET option_name=ods_field EQ int_value=int_literal
+    : SET option_name=ods_field EQ (int_literal|string_literal)
     ;
 
 show_command

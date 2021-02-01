@@ -53,7 +53,8 @@ class SplitVisitor(MyQueryParserVisitor):
     def visitSet_command(self, ctx):
         self.q.set_command = (
             ctx.option_name.getText(),
-            int(ctx.int_value.getText())
+            int(ctx.int_literal().getText()) if ctx.int_literal()
+            else ctx.string_literal().getText()[1:-1]
         )
 
     def visitFunctionAggregation(self, ctx):
