@@ -296,6 +296,8 @@ def main():
 
         if r.status_code != 200:
             print(r.text)
+            if options.get("display_timing"):
+                print("Request time: {:0.2g}s".format(request_elapsed))
             continue
 
         results = r.json()
